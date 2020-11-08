@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+# -*- coding:utf-8 -*-
 import pandas as pd
 import time
 import requests
 import os
 from click import secho, style
-from tkinter import messagebox
+from pathlib import Path
 
 
 ALERT_STOCK = 'sh601668'
@@ -102,7 +104,7 @@ def print_stock(url):
                         f'\t涨幅告警: {name} - {gap:.2f}%', bg='red')
 
 
-df = pd.read_csv('stocks.csv', delimiter=",")
+df = pd.read_csv(os.path.join(Path.home(), '.stocks'), delimiter=",")
 url = "http://hq.sinajs.cn/list=" + ','.join([c for c in df['股票代码']])
 
 if __name__ == "__main__":
