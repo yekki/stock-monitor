@@ -1,17 +1,29 @@
 import pandas as pd
 import time
-from termcolor import bcolors
 import requests
 import os
+from click import secho, style
+from tkinter import messagebox
+
+
+ALERT_STOCK = 'sh601668'
+ALERT_VALVE = 3
+ALERT_TOGGLE = False
+ALERT_MESSAGE = ''
+
 
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def get_now():
+
+def now_dt():
     return time.strftime('%Y-%m-%d %A %p %X', time.localtime(time.time()))
 
-def high_or_low(a,b):
-    return bcolors.RED if a >= b else bcolors.GREEN  
+
+def high_or_low(a, b):
+    # return bcolors.RED if a >= b else bcolors.GREEN
+    return 'red' if a >= b else 'green'
+
 
 def print_stock(url):
     data = requests.get(url)
@@ -19,55 +31,84 @@ def print_stock(url):
     for line in lines:
         stock_info = line.split(',')
         if stock_info[0]:
-            temp  = stock_info[0].split('_')[2].replace('"','').split('=')
+            temp = stock_info[0].split('_')[2].replace('"', '').split('=')
             code = temp[0]
             name = temp[1]
-        
-            tody_opening_price   = float(stock_info[1])
-            yesterday_closing_price  = float(stock_info[2])
-            current_price   = float(stock_info[3])
+
+            tody_opening_price = float(stock_info[1])
+            yesterday_closing_price = float(stock_info[2])
+            current_price = float(stock_info[3])
             today_highest_price = float(stock_info[4])
             today_lowest_price = float(stock_info[5])
-            per = '停牌  ' if '%.2f' % tody_opening_price == '0.00' else  ('%+.2f' % ( ( current_price / yesterday_closing_price - 1 ) * 100 ) )+ '%'
-            #红涨绿跌
-            tody_opening_price_color = high_or_low(tody_opening_price, yesterday_closing_price)
-            current_price_color = high_or_low(current_price, yesterday_closing_price)
-            today_highest_price_color = high_or_low(today_highest_price, yesterday_closing_price)
-            today_lowest_price_color = high_or_low(today_lowest_price, yesterday_closing_price)
-            
+            per = '停牌  ' if '%.2f' % tody_opening_price == '0.00' else (
+                '%+.2f' % ((current_price / yesterday_closing_price - 1) * 100)) + '%'
+            # 红涨绿跌
+            tody_opening_price_color = high_or_low(
+                tody_opening_price, yesterday_closing_price)
+            current_price_color = high_or_low(
+                current_price, yesterday_closing_price)
+            today_highest_price_color = high_or_low(
+                today_highest_price, yesterday_closing_price)
+            today_lowest_price_color = high_or_low(
+                today_lowest_price, yesterday_closing_price)
+
             margin = 0
             margin_ratio = 0
-            margin_color = bcolors.WHITE
-            stock_position = int(df[df.股票代码==code].values[0][1])
-            cost_of_carry = float(df[df.股票代码==code].values[0][2])
-            
+            stock_position = int(df[df.股票代码 == code].values[0][1])
+            cost_of_carry = float(df[df.股票代码 == code].values[0][2])
+
             if '%.2f' % tody_opening_price != '0.00':
-                margin = ( current_price - cost_of_carry ) * stock_position
-                margin_ratio = 0 if cost_of_carry == 0 else ( '%+.2f' % ( (current_price / cost_of_carry - 1) * 100 ) ) + '%'
+                margin = (current_price - cost_of_carry) * stock_position
+                margin_ratio = '/' if cost_of_carry == 0 else (
+                    '%+.2f' % ((current_price / cost_of_carry - 1) * 100)) + '%'
                 margin_color = high_or_low(current_price, cost_of_carry)
             else:
-                margin = ( yesterday_closing_price - cost_of_carry ) * stock_position
-                margin_ratio = 0 if cost_of_carry == 0 else ( '%+.2f' % ( (yesterday_closing_price / cost_of_carry - 1) * 100 ) ) + '%'
-                margin_color = high_or_low(yesterday_closing_price, cost_of_carry)
-            
-            print('%s%s%s %s%4s%s %s%10.2f%s %s%10.2f%s %s%10.2f%s %s%10.2f%s %s%10.2f   %s%s    %s%10.2f     %10s%s   %s%10.2f%s' % \
-                    (bcolors.WHITE, code, bcolors.ENDC,  
-                     bcolors.WHITE, name, bcolors.ENDC,  
-                     bcolors.WHITE, yesterday_closing_price, bcolors.ENDC,  
-                     tody_opening_price_color, tody_opening_price, bcolors.ENDC, 
-                     today_highest_price_color, today_highest_price, bcolors.ENDC, 
-                     today_lowest_price_color, today_lowest_price, bcolors.ENDC, 
-                     current_price_color, current_price, per, bcolors.ENDC,
-                     margin_color, margin, margin_ratio, bcolors.ENDC,
-                     bcolors.WHITE, cost_of_carry * stock_position, bcolors.ENDC))
+                margin = (yesterday_closing_price -
+                          cost_of_carry) * stock_position
+                margin_ratio = '/' if cost_of_carry == 0 else (
+                    '%+.2f' % ((yesterday_closing_price / cost_of_carry - 1) * 100)) + '%'
+                margin_color = high_or_low(
+                    yesterday_closing_price, cost_of_carry)
+
+            output = style(
+                f'{code} {name} {yesterday_closing_price: 10.2f}', fg='white')
+            output += style(f' {tody_opening_price:10.2f}',
+                            fg=tody_opening_price_color)
+            output += style(f' {today_highest_price:10.2f}',
+                            fg=today_highest_price_color)
+            output += style(f' {today_lowest_price:10.2f}',
+                            fg=today_lowest_price_color)
+            output += style(f' {current_price:10.2f}', fg=current_price_color)
+            output += style(f' {per:>8}', fg=current_price_color)
+            output += style(f' {"/":>6}', fg=margin_color) if margin == 0 else style(f' {cost_of_carry:>6.2f}',
+                                                                                     fg=margin_color)
+            output += style(f' {margin_ratio:>10}',
+                            fg=margin_color)
+            output += style(f' {"/":>10}', fg=margin_color) if margin == 0 else style(f' {margin:10.2f}',
+                                                                                      fg=margin_color)
+            output += style(f' {"/":>10}', fg=margin_color) if margin == 0 else style(f' {stock_position:10}',
+                                                                                      fg='white')
+            secho(output)
+
+            # alert check
+            global ALERT_TOGGLE, ALERT_VALVE, ALERT_STOCK, ALERT_MESSAGE
+            if not ALERT_TOGGLE:
+
+                gap = (current_price / yesterday_closing_price - 1) * 100
+
+                if gap > ALERT_VALVE and code == ALERT_STOCK:
+                    ALERT_TOGGLE = True
+                    ALERT_MESSAGE = style(
+                        f'\t涨幅告警: {name} - {gap:.2f}%', bg='red')
+
 
 df = pd.read_csv('stocks.csv', delimiter=",")
-url = "http://hq.sinajs.cn/list=" + ','.join([ c for c in df['股票代码']])
+url = "http://hq.sinajs.cn/list=" + ','.join([c for c in df['股票代码']])
 
 if __name__ == "__main__":
     while True:
         clear()
-        print(bcolors.WHITE, "代码      名称         昨收        今开     最高        最低       现价     涨幅      浮动数额       盈亏比例     成本金额", bcolors.ENDC)
-        print(bcolors.YELLOW, get_now(), bcolors.ENDC)
+        secho("代码      名称         昨收        今开     最高        最低       现价     涨幅    成本   盈亏比例    持仓市值   持仓股数", fg='white')
         print_stock(url)
-        time.sleep(5)  
+        secho(style(now_dt(), fg='yellow') + ALERT_MESSAGE)
+        time.sleep(5)
