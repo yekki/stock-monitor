@@ -57,20 +57,20 @@ def print_stock(url):
             margin = 0
             margin_ratio = 0
             stock_position = int(df[df.股票代码 == code].values[0][1])
-            cost_of_carry = float(df[df.股票代码 == code].values[0][2])
+            stock_volume = float(df[df.股票代码 == code].values[0][2])
 
             if '%.2f' % tody_opening_price != '0.00':
-                margin = (current_price - cost_of_carry) * stock_position
-                margin_ratio = '/' if cost_of_carry == 0 else (
-                    '%+.2f' % ((current_price / cost_of_carry - 1) * 100)) + '%'
-                margin_color = high_or_low(current_price, cost_of_carry)
+                margin = (current_price - stock_volume) * stock_position
+                margin_ratio = '/' if stock_volume == 0 else (
+                    '%+.2f' % ((current_price / stock_volume - 1) * 100)) + '%'
+                margin_color = high_or_low(current_price, stock_volume)
             else:
                 margin = (yesterday_closing_price -
-                          cost_of_carry) * stock_position
-                margin_ratio = '/' if cost_of_carry == 0 else (
-                    '%+.2f' % ((yesterday_closing_price / cost_of_carry - 1) * 100)) + '%'
+                          stock_volume) * stock_position
+                margin_ratio = '/' if stock_volume == 0 else (
+                    '%+.2f' % ((yesterday_closing_price / stock_volume - 1) * 100)) + '%'
                 margin_color = high_or_low(
-                    yesterday_closing_price, cost_of_carry)
+                    yesterday_closing_price, stock_volume)
 
             output = style(
                 f'{code} {name} {yesterday_closing_price: 10.2f}', fg='white')
@@ -82,7 +82,7 @@ def print_stock(url):
                             fg=today_lowest_price_color)
             output += style(f' {current_price:10.2f}', fg=current_price_color)
             output += style(f' {per:>8}', fg=current_price_color)
-            output += style(f' {"/":>6}', fg=margin_color) if margin == 0 else style(f' {cost_of_carry:>6.2f}',
+            output += style(f' {"/":>6}', fg=margin_color) if margin == 0 else style(f' {stock_volume:>6.2f}',
                                                                                      fg=margin_color)
             output += style(f' {margin_ratio:>10}',
                             fg=margin_color)
@@ -110,7 +110,7 @@ url = "http://hq.sinajs.cn/list=" + ','.join([c for c in df['股票代码']])
 if __name__ == "__main__":
     while True:
         clear()
-        secho("代码      名称         昨收        今开     最高        最低       现价     涨幅    成本   盈亏比例    持仓市值   持仓股数", fg='white')
+        secho("代码      名称         昨收        今开     最高        最低       现价     涨幅    成本   盈亏比例    持仓市值   持仓股数", fg='white', bold=True)
         print_stock(url)
         secho(style(now_dt(), fg='yellow') + ALERT_MESSAGE)
         time.sleep(5)
